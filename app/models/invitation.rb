@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Invitation < ApplicationRecord
   belongs_to :user
   belongs_to :team
@@ -13,7 +15,7 @@ class Invitation < ApplicationRecord
     elsif valid?
       "PENDING - #{invitation_description}"
     else
-      "INVALID"
+      'INVALID'
     end
   end
 

@@ -1,11 +1,14 @@
-ENV["RACK_ENV"] = "test"
+# frozen_string_literal: true
 
-require File.expand_path("../../config/environment", __FILE__)
-abort("DATABASE_URL environment variable is set") if ENV["DATABASE_URL"]
+ENV['RACK_ENV'] = 'test'
 
-require "rspec/rails"
+require File.expand_path('../config/environment', __dir__)
+abort('DATABASE_URL environment variable is set') if ENV['DATABASE_URL']
 
-Dir[Rails.root.join("spec/support/**/*.rb")].sort.each { |file| require file }
+require 'spec_helper'
+require 'rspec/rails'
+
+Dir[Rails.root.join('spec/support/**/*.rb')].sort.each { |file| require file }
 
 module Features
   # Extend this module in spec/support/features/*.rb

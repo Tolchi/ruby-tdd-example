@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class CreateSubscriptionsAndMagazines < ActiveRecord::Migration[5.0]
   def change
     create_table :magazines do |t|
