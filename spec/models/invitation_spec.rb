@@ -3,38 +3,40 @@
 require 'rails_helper'
 
 RSpec.describe Invitation do
-  let(:invitation) { build(:invitation, team: team, user: new_user) }
-  let(:new_user) { create(:user, email: 'rookie@example.com') }
-  let(:team) { create(:team, name: 'A fine team') }
-  let(:team_owner) { create(:user) }
-
-  before do
-    team.update!(owner: team_owner)
-    team_owner.update!(team: team)
-  end
-
   describe 'callbacks' do
     describe 'after_save' do
       context 'with valid data' do
         it 'invites the user' do
-          invitation.save
-          expect(new_user).to be_invited
+          team_owner = build_owner
+          inviting_team = create_team(team_owner)
+          update_team_with_owner(inviting_team, team_owner)
+          user_to_be_invited = build_user
+          valid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+          valid_invitation.save
+          expect(user_to_be_invited).to be_invited
         end
       end
 
       context 'with invalid data' do
-        before do
-          invitation.team = nil
-          invitation.save
-        end
-
         it 'does not save the invitation' do
-          expect(invitation).not_to be_valid
-          expect(invitation).to be_new_record
+          team_owner = build_owner
+          inviting_team = create_team(team_owner)
+          user_to_be_invited = build_user
+          update_team_with_owner(inviting_team, team_owner)
+          invitation_not_valid = inviting_user_to_team(inviting_team, user_to_be_invited)
+          invalid_invitation(invitation_not_valid)
+          expect(invitation_not_valid).not_to be_valid
+          expect(invitation_not_valid).to be_new_record
         end
 
         it 'does not mark the user as invited' do
-          expect(new_user).not_to be_invited
+          team_owner = build_owner
+          inviting_team = create_team(team_owner)
+          user_to_be_not_invited = build_user
+          update_team_with_owner(inviting_team, team_owner)
+          invitation_not_valid = inviting_user_to_team(inviting_team, user_to_be_not_invited)
+          invalid_invitation(invitation_not_valid)
+          expect(user_to_be_not_invited).not_to be_invited
         end
       end
     end
@@ -42,44 +44,97 @@ RSpec.describe Invitation do
 
   describe '#event_log_statement' do
     context 'when the record is saved' do
-      before do
-        invitation.save
-      end
-
       it 'include the name of the team' do
-        log_statement = invitation.event_log_statement
+        team_owner = build_owner
+        inviting_team = create_team(team_owner)
+        user_to_be_invited = build_user
+        update_team_with_owner(inviting_team, team_owner)
+        valid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+        valid_invitation.save
+        log_statement = valid_invitation.event_log_statement
         expect(log_statement).to include('A fine team')
       end
 
       it 'include the email of the invitee' do
-        log_statement = invitation.event_log_statement
+        team_owner = build_owner
+        inviting_team = create_team(team_owner)
+        user_to_be_invited = build_user
+        update_team_with_owner(inviting_team, team_owner)
+        valid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+        valid_invitation.save
+        log_statement = valid_invitation.event_log_statement
         expect(log_statement).to include('rookie@example.com')
       end
     end
 
     context 'when the record is not saved but valid' do
       it 'includes the name of the team' do
-        log_statement = invitation.event_log_statement
+        team_owner = build_owner
+        inviting_team = create_team(team_owner)
+        user_to_be_invited = build_user
+        update_team_with_owner(inviting_team, team_owner)
+        valid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+        log_statement = valid_invitation.event_log_statement
         expect(log_statement).to include('A fine team')
       end
 
       it 'includes the email of the invitee' do
-        log_statement = invitation.event_log_statement
+        team_owner = build_owner
+        inviting_team = create_team(team_owner)
+        user_to_be_invited = build_user
+        update_team_with_owner(inviting_team, team_owner)
+        valid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+        log_statement = valid_invitation.event_log_statement
         expect(log_statement).to include('rookie@example.com')
       end
 
       it "includes the word 'PENDING'" do
-        log_statement = invitation.event_log_statement
+        team_owner = build_owner
+        inviting_team = create_team(team_owner)
+        user_to_be_invited = build_user
+        update_team_with_owner(inviting_team, team_owner)
+        valid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+        log_statement = valid_invitation.event_log_statement
         expect(log_statement).to include('PENDING')
       end
     end
 
     context 'when the record is not saved and not valid' do
       it 'includes INVALID' do
-        invitation.user = nil
-        log_statement = invitation.event_log_statement
+        team_owner = build_owner
+        inviting_team = create_team(team_owner)
+        user_to_be_invited = build_user
+        update_team_with_owner(inviting_team, team_owner)
+        invalid_invitation = inviting_user_to_team(inviting_team, user_to_be_invited)
+        invalid_invitation.user = nil
+        log_statement = invalid_invitation.event_log_statement
         expect(log_statement).to include('INVALID')
       end
     end
+  end
+
+  def invalid_invitation(invitation)
+    invitation.team = nil
+    invitation.save
+  end
+
+  def build_user
+    User.new(email: 'rookie@example.com')
+  end
+
+  def build_owner
+    User.new
+  end
+
+  def create_team(owner)
+    Team.new(name: 'A fine team', owner: owner)
+  end
+
+  def update_team_with_owner(team, owner)
+    owner.update!(team: team)
+  end
+
+  def inviting_user_to_team(team, user)
+    Invitation.new(team: team, user: user)
   end
 end
